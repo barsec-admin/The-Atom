@@ -22,10 +22,19 @@ export async function POST(request) {
 
 export async function GET() {
   try {
+    console.log("GET /api/articles called");
     await dbConnect();
+    console.log("Connected to database");
+
     const articles = await Article.find({}).sort({ publishDate: -1 });
-    return NextResponse.json(articles);
+    console.log("Found articles:", articles);
+
+    return NextResponse.json({ success: true, data: articles });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    console.error("Error in GET /api/articles:", error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }

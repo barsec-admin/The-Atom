@@ -20,7 +20,7 @@ export default function ArchivePage() {
         const nextIndex = prevIndex + 1;
         return nextIndex >= ads.length ? 0 : nextIndex;
       });
-    }, 5000); // Rotate every 5 seconds
+    }, 5000);
 
     return () => clearInterval(rotationInterval);
   }, [ads.length]);
@@ -33,10 +33,19 @@ export default function ArchivePage() {
     try {
       const response = await fetch("/api/articles");
       const data = await response.json();
-      setArticles(data);
-      setFilteredArticles(data);
+      console.log("Fetched articles:", data); // Debug log
+      if (data.success) {
+        setArticles(data.data);
+        setFilteredArticles(data.data);
+      } else {
+        console.error("Failed to fetch articles:", data.error);
+        setArticles([]);
+        setFilteredArticles([]);
+      }
     } catch (error) {
       console.error("Error fetching articles:", error);
+      setArticles([]);
+      setFilteredArticles([]);
     }
   };
 
@@ -44,13 +53,19 @@ export default function ArchivePage() {
     try {
       const response = await fetch("/api/ads");
       const data = await response.json();
-      setAds(data);
+      setAds(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching ads:", error);
+      setAds([]);
     }
   };
 
   const filterArticles = () => {
+    if (!Array.isArray(articles)) {
+      console.error("Articles is not an array:", articles);
+      return;
+    }
+
     if (!searchQuery.trim()) {
       setFilteredArticles(articles);
       return;
@@ -85,7 +100,7 @@ export default function ArchivePage() {
 
   // Get currently visible ads (4 at a time)
   const getVisibleAds = () => {
-    if (ads.length <= 4) return ads;
+    if (!Array.isArray(ads) || ads.length <= 4) return ads;
 
     const visibleAds = [];
     for (let i = 0; i < 4; i++) {
@@ -113,7 +128,7 @@ export default function ArchivePage() {
         </div>
 
         <div className="flex gap-8">
-          {/* Ad Sidebar with Carousel */}
+          {/* Ad Sidebar */}
           <aside className="w-64 space-y-4">
             <h2 className="text-xl font-bold mb-4">Sponsored Content</h2>
             <div className="space-y-4 relative transition-all duration-500 ease-in-out">
@@ -137,82 +152,65 @@ export default function ArchivePage() {
                   </div>
                 </a>
               ))}
-              {/* Carousel Indicators */}
-              {ads.length > 4 && (
-                <div className="flex justify-center space-x-2 mt-4">
-                  {Array.from({ length: Math.ceil(ads.length / 4) }).map(
-                    (_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCurrentAdIndex(idx * 4)}
-                        className={`w-2 h-2 rounded-full ${
-                          Math.floor(currentAdIndex / 4) === idx
-                            ? "bg-blue-500"
-                            : "bg-gray-300"
-                        }`}
-                        aria-label={`Go to ad set ${idx + 1}`}
-                      />
-                    )
-                  )}
-                </div>
-              )}
             </div>
           </aside>
 
           {/* Articles Grid */}
           <div className="flex-1 grid md:grid-cols-2 gap-6">
-            {filteredArticles.map((article) => {
-              const firstImage = getFirstImageBlock(article.content);
-              const excerpt = getFirstTextBlock(article.content);
+            {Array.isArray(filteredArticles) &&
+              filteredArticles.map((article) => {
+                if (!article) return null;
+                const firstImage = getFirstImageBlock(article.content);
+                const excerpt = getFirstTextBlock(article.content);
 
-              return (
-                <Link
-                  href={`/articles/${article._id}`}
-                  key={article._id}
-                  className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  <article className="h-full flex flex-col">
-                    {firstImage && firstImage.imageData && (
-                      <div className="relative w-full h-48">
-                        <img
-                          src={`data:${firstImage.imageData.contentType};base64,${firstImage.imageData.base64Data}`}
-                          alt={firstImage.caption || article.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="p-4 flex-grow">
-                      <h2 className="text-xl font-bold mb-2">
-                        {article.title}
-                      </h2>
-                      <p className="text-gray-600 text-sm mb-2">
-                        By {article.author} •{" "}
-                        {new Date(article.publishDate).toLocaleDateString()}
-                      </p>
-                      <p className="text-gray-700 line-clamp-3 mb-4">
-                        {excerpt}
-                      </p>
-                      {article.tags && article.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-auto">
-                          {article.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-600"
-                            >
-                              {tag}
-                            </span>
-                          ))}
+                return (
+                  <Link
+                    href={`/articles/${article._id}`}
+                    key={article._id}
+                    className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                  >
+                    <article className="h-full flex flex-col">
+                      {firstImage && firstImage.imageData && (
+                        <div className="relative w-full h-48">
+                          <img
+                            src={`data:${firstImage.imageData.contentType};base64,${firstImage.imageData.base64Data}`}
+                            alt={firstImage.caption || article.title}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       )}
-                    </div>
-                  </article>
-                </Link>
-              );
-            })}
+                      <div className="p-4 flex-grow">
+                        <h2 className="text-xl font-bold mb-2">
+                          {article.title}
+                        </h2>
+                        <p className="text-gray-600 text-sm mb-2">
+                          By {article.author} •{" "}
+                          {new Date(article.publishDate).toLocaleDateString()}
+                        </p>
+                        <p className="text-gray-700 line-clamp-3 mb-4">
+                          {excerpt}
+                        </p>
+                        {article.tags && article.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-auto">
+                            {article.tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                className="bg-gray-100 px-2 py-1 rounded-full text-xs text-gray-600"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  </Link>
+                );
+              })}
           </div>
         </div>
 
-        {filteredArticles.length === 0 && (
+        {Array.isArray(filteredArticles) && filteredArticles.length === 0 && (
           <p className="text-center text-gray-500 mt-8">
             No articles found matching your search.
           </p>

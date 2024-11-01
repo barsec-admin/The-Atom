@@ -44,29 +44,28 @@ export default async function ArticlePage({ params }) {
 
   return (
     <Layout>
-    <article className="max-w-4xl mx-auto p-8">
-      <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
-      <div className="text-gray-600 mb-4">
-        By {article.author} •{" "}
-        {new Date(article.publishDate).toLocaleDateString()}
-      </div>
-      {article.tags?.length > 0 && (
-        <div className="flex gap-2 mb-8">
-          {article.tags.map((tag) => (
-            <span
-              key={tag}
-              className="bg-gray-100 px-3 py-1 rounded-full text-sm"
-            >
-              {tag}
-            </span>
-          ))}
+      <article className="max-w-4xl mx-auto p-8">
+        <h1 className="text-4xl font-bold mb-4">{article.title}</h1>
+        <div className="text-gray-600 mb-4">
+          By {article.author} •{" "}
+          {new Date(article.publishDate).toLocaleDateString()}
         </div>
-      )}
-      <div className="mt-8">
-        {article.content.sort((a, b) => a.order - b.order).map(renderBlock)}
-      </div>
-    </article>
-
+        {article.tags?.length > 0 && (
+          <div className="flex gap-2 mb-8">
+            {article.tags.map((tag) => (
+              <span
+                key={tag}
+                className="bg-gray-100 px-3 py-1 rounded-full text-sm"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="mt-8">
+          {article.content.sort((a, b) => a.order - b.order).map(renderBlock)}
+        </div>
+      </article>
     </Layout>
   );
 }

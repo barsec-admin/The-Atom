@@ -1,120 +1,182 @@
 "use client";
-// pages/index.js
-// app/page.js
 import Layout from "../components/Layout";
-//const fetch = require('node-fetch');
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-//pedantic change
-
 export default function Home() {
-
-  const [articles, setArticle] = useState([]);
-  const [fTitle, setFTitle] = useState([]);
-  const[titleOne, setTitleOne] = useState([]);
-  const[titleTwo, setTitleTwo] = useState([]);
-  const[titleThree, setTitleThree] = useState([]);
-  //const[fImage, setFImage] = useState([]);
-  const[fContentRaw, setFContent] = useState([]);
-  const[contentOneRaw, setContentOne] = useState([]);
-  const[contentTwoRaw, setContentTwo] = useState([]);
-  const[contentThreeRaw, setContentThree] = useState([]);
-
-  
+  const [articles, setArticles] = useState([]);
+  const [ads, setAds] = useState([]);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [mainArticle, setMainArticle] = useState(null);
+  const [recentArticles, setRecentArticles] = useState([]);
 
   useEffect(() => {
-    // Fetch articles when component mounts
     fetchArticles();
-  }, []);
+    fetchAds();
 
-  function getContent(content, index, intent){
+    const rotationInterval = setInterval(() => {
+      setCurrentAdIndex((prevIndex) => {
+        const nextIndex = prevIndex + 1;
+        return nextIndex >= ads.length ? 0 : nextIndex;
+      });
+    }, 5000);
 
-    let conType = content[index].type;
-    if((conType == "image" && intent == "text")|| (conType == "text" && intent == "image")){
-        content = getContent(content, index + 1, intent);
-    }
-    return content[index];
-  }
+    return () => clearInterval(rotationInterval);
+  }, [ads.length]);
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch("./api/articles");
+      const response = await fetch("/api/articles");
       const data = await response.json();
-      if (data.success) {
-        setArticle(data.data);  
-        setFTitle(data.data[0].title);
-        setTitleOne(data.data[1].title);
-        setTitleTwo(data.data[2].title);
-        setTitleThree(data.data[3].title);
-        //setFImage(getContent(data.data[0].content, 0, "image"));
-        setFContent(getContent(data.data[0].content,0, "text").text);
-        setContentOne(getContent(data.data[1].content, 0, "text").text);
-        setContentTwo(getContent(data.data[2].content, 0, "text").text);
-        setContentThree(getContent(data.data[3].content, 0, "text").text);
+
+      if (data.data && data.data.length > 0) {
+        const sortedArticles = data.data.sort(
+          (a, b) => new Date(b.publishDate) - new Date(a.publishDate)
+        );
+        setMainArticle(sortedArticles[0]);
+        setRecentArticles(sortedArticles.slice(1, 4));
       }
     } catch (error) {
       console.error("Error fetching articles:", error);
     }
   };
-  let fContent = fContentRaw.slice(0,400).concat("...");
-  let contentOne = contentOneRaw.slice(0, 400).concat("...");
-  let contentTwo = contentTwoRaw.slice(0, 400).concat("...");
-  let contentThree = contentThreeRaw.slice(0, 400).concat("...");
-  let subContent = [{title: titleOne, content: contentOne}, {title: titleTwo, content: contentTwo}, {title: titleThree, content: contentThree}];
+
+  const fetchAds = async () => {
+    try {
+      const response = await fetch("/api/ads");
+      const data = await response.json();
+      setAds(data);
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+    }
+  };
+
+  const getFirstImageUrl = (content) => {
+    if (!Array.isArray(content)) return null;
+    const imageBlock = content.find(
+      (block) => block.type === "image" && block.imageData
+    );
+    return imageBlock?.imageData;
+  };
+
+  const getFirstTextExcerpt = (content) => {
+    if (!Array.isArray(content)) return "";
+    const textBlock = content.find((block) => block.type === "text");
+    const excerpt = textBlock?.text?.substring(0, 200) + "..." || "";
+    return excerpt;
+  };
+
+  const getVisibleAds = () => {
+    if (ads.length <= 4) return ads;
+    const visibleAds = [];
+    for (let i = 0; i < 4; i++) {
+      const index = (currentAdIndex + i) % ads.length;
+      visibleAds.push(ads[index]);
+    }
+    return visibleAds;
+  };
 
   return (
     <Layout>
-      {/* <h1></h1> */}
       <div className="grid grid-cols-3 gap-8">
         <div className="col-span-2">
-          <h2 className="text-2xl font-bold mb-4"></h2>
- 
-          <div className="bg-gray-200 p-4 mb-8">
-              <h3 className="text-xl font-semibold">{fTitle}</h3>
-              <img
-                //src="../placeholder-image.jpg"
-                src = "/images/the-atom-header-best.jpg"
-                alt=""
-                className="w-full h-64 object-cover mb-4"
-              />
-
-              <p>
-                {fContent}
-              </p>
-            </div>
-            <h2 className="text-2xl font-bold mb-4">Latest Content</h2>
-            <div className="space-y-4">
-              {[subContent[0], subContent[1], subContent[2]].map((item) => (
-                <div key={item} className="bg-gray-100 p-4">
-                  <h3 className="text-lg font-semibold">{item.title}</h3>
-                  <p>{item.content}</p>
+          {mainArticle ? (
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+              <Link href={`/articles/${mainArticle._id}`}>
+                <div className="p-4">
+                  <h3 className="text-2xl font-bold mb-4">
+                    {mainArticle.title}
+                  </h3>
+                  {getFirstImageUrl(mainArticle.content) && (
+                    <div className="relative w-full h-64 mb-4">
+                      <img
+                        src={`data:${
+                          getFirstImageUrl(mainArticle.content).contentType
+                        };base64,${
+                          getFirstImageUrl(mainArticle.content).base64Data
+                        }`}
+                        alt={mainArticle.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <p className="text-gray-700">
+                    {getFirstTextExcerpt(mainArticle.content)}
+                  </p>
+                  <p className="text-gray-500 mt-2">By {mainArticle.author}</p>
                 </div>
-              ))}
-              
+              </Link>
             </div>
+          ) : (
+            <div>Loading main article...</div>
+          )}
+
+          <h2 className="text-2xl font-bold mb-4">Latest Content</h2>
+          <div className="space-y-4">
+            {recentArticles.map((article) => (
+              <Link
+                href={`/articles/${article._id}`}
+                key={article._id}
+                className="block bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+              >
+                <div className="p-4">
+                  <h3 className="text-xl font-bold mb-2">{article.title}</h3>
+                  <p className="text-gray-700">
+                    {getFirstTextExcerpt(article.content)}
+                  </p>
+                  <p className="text-gray-500 mt-2">By {article.author}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold mb-4">The atom is funded by readers like you, thank you</h2>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="bg-gray-300 p-4 h-48">
-                Ad {item}
-              </div>
+          <h2 className="text-2xl font-bold mb-4">
+            We appreciate our partners in the Arts community
+          </h2>
+          <div className="space-y-4 relative transition-all duration-500 ease-in-out">
+            {getVisibleAds().map((ad) => (
+              <a
+                key={ad._id}
+                href={ad.externalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
+              >
+                {ad.imageData && (
+                  <img
+                    src={`data:${ad.imageData.contentType};base64,${ad.imageData.base64Data}`}
+                    alt={ad.title}
+                    className="w-full h-32 object-cover"
+                  />
+                )}
+                <div className="p-2">
+                  <h3 className="font-semibold">{ad.title}</h3>
+                </div>
+              </a>
             ))}
+            {ads.length > 4 && (
+              <div className="flex justify-center space-x-2 mt-4">
+                {Array.from({ length: Math.ceil(ads.length / 4) }).map(
+                  (_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentAdIndex(idx * 4)}
+                      className={`w-2 h-2 rounded-full ${
+                        Math.floor(currentAdIndex / 4) === idx
+                          ? "bg-blue-500"
+                          : "bg-gray-300"
+                      }`}
+                      aria-label={`Go to ad set ${idx + 1}`}
+                    />
+                  )
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
     </Layout>
   );
 }
-// <Link
-// href="/admin/manage-articles"
-// className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow"
-// >
-// <h2 className="text-xl font-semibold mb-2">Manage Articles</h2>
-// <p className="text-gray-600">
-//   Edit, delete, or unpublish existing articles
-// </p>
-// </Link> 
