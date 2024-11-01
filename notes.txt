@@ -1,3 +1,9 @@
+We appricate our partners in the Arts community
+
+
+Username: LubbockLizAdams
+Password: E@rth@LikesN@ps2
+
 tsconfig.json
 
 {

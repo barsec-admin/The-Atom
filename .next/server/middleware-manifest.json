@@ -1,5 +1,6 @@
 {
   "version": 3,
+<<<<<<< Updated upstream
   "middleware": {
     "/": {
       "files": [
@@ -22,8 +23,9 @@
       }
     }
   },
+=======
+  "middleware": {},
+>>>>>>> Stashed changes
   "functions": {},
-  "sortedMiddleware": [
-    "/"
-  ]
+  "sortedMiddleware": []
 }

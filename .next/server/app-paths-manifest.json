@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 {
   "/page": "app/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
@@ -6,3 +7,6 @@
   "/admin/create-article/page": "app/admin/create-article/page.js",
   "/api/articles/route": "app/api/articles/route.js"
 }
+=======
+{}
+>>>>>>> Stashed changes
