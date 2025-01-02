@@ -1,20 +1,5 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/admin/create-ad/page": "app/admin/create-ad/page.js",
-  "/admin/login/page": "app/admin/login/page.js",
-  "/admin/manage-ads/page": "app/admin/manage-ads/page.js",
-  "/about/page": "app/about/page.js",
-  "/admin/manage-articles/page": "app/admin/manage-articles/page.js",
-  "/admin/create-article/page": "app/admin/create-article/page.js",
-  "/api/articles/route": "app/api/articles/route.js",
-  "/api/ads/[id]/route": "app/api/ads/[id]/route.js",
-  "/admin/page": "app/admin/page.js",
-  "/api/ads/route": "app/api/ads/route.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/articles/search/route": "app/api/articles/search/route.js",
-  "/api/upload/route": "app/api/upload/route.js",
-  "/archive/page": "app/archive/page.js",
   "/page": "app/page.js",
-  "/articles/[slug]/page": "app/articles/[slug]/page.js",
-  "/artists-events/page": "app/artists-events/page.js"
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/admin/page": "app/admin/page.js"
 }
