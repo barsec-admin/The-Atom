@@ -13,23 +13,41 @@ export const {
   providers: [
     Credentials({
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        try {
+          console.log("Authorizing with credentials:", { email: credentials?.email });
+          
+          if (!credentials?.email || !credentials?.password) {
+            console.log("Missing credentials");
+            return null;
+          }
 
-        await dbConnect();
-        const admin = await Admin.findOne({ email: credentials.email });
-        if (!admin) return null;
+          await dbConnect();
+          console.log("Database connected");
+          
+          const admin = await Admin.findOne({ email: credentials.email });
+          console.log("Admin found:", !!admin);
+          
+          if (!admin) return null;
 
         const isValid = await bcrypt.compare(
           credentials.password,
           admin.password
         );
+        console.log("Password valid:", isValid);
+        
         if (!isValid) return null;
 
-        return {
+        const user = {
           id: admin._id.toString(),
           email: admin.email,
           role: admin.role,
         };
+        console.log("Returning user:", user);
+        return user;
+        } catch (error) {
+          console.error("Authorization error:", error);
+          return null;
+        }
       },
     }),
   ],
@@ -61,5 +79,20 @@ export const {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: `__Secure-authjs.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+        domain: 'theatom.news'
+      }
+    }
   },
 });
