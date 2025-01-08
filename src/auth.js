@@ -14,38 +14,33 @@ export const {
     Credentials({
       async authorize(credentials) {
         try {
-          console.log("Authorizing with credentials:", { email: credentials?.email });
-          
           if (!credentials?.email || !credentials?.password) {
-            console.log("Missing credentials");
-            return null;
+            throw new Error("Missing credentials");
           }
 
           await dbConnect();
-          console.log("Database connected");
           
           const admin = await Admin.findOne({ email: credentials.email });
-          console.log("Admin found:", !!admin);
+          if (!admin) {
+            throw new Error("Invalid email");
+          }
+
+          const isValid = await bcrypt.compare(
+            credentials.password,
+            admin.password
+          );
           
-          if (!admin) return null;
+          if (!isValid) {
+            throw new Error("Invalid password");
+          }
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          admin.password
-        );
-        console.log("Password valid:", isValid);
-        
-        if (!isValid) return null;
-
-        const user = {
-          id: admin._id.toString(),
-          email: admin.email,
-          role: admin.role,
-        };
-        console.log("Returning user:", user);
-        return user;
+          return {
+            id: admin._id.toString(),
+            email: admin.email,
+            role: admin.role,
+          };
         } catch (error) {
-          console.error("Authorization error:", error);
+          console.error("Auth error:", error.message);
           return null;
         }
       },
@@ -85,13 +80,12 @@ export const {
   },
   cookies: {
     sessionToken: {
-      name: `__Secure-authjs.session-token`,
+      name: `next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: true,
-        domain: 'theatom.news'
+        secure: process.env.NODE_ENV === 'production'
       }
     }
   },
