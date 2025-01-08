@@ -159,27 +159,175 @@ Key changes:
    - Check authentication errors
    - Verify session handling
 
-## Branch Information
-All changes are available in the `fix/auth-login-issues` branch:
+## Latest Fix Implementation (January 2025)
+
+### Branch Information
+The latest fixes are available in two branches:
+1. `fix/auth-login-issues` - Initial analysis and base fixes
+2. `fix/auth-callback-handling` - Latest cookie and session handling improvements
+
+### Developer Implementation Guide
+
+#### 1. Environment Setup
 ```bash
-git checkout fix/auth-login-issues
+# Clone the repository if you haven't already
+git clone https://github.com/barsec-admin/The-Atom.git
+cd The-Atom
+
+# Switch to the latest fix branch
+git checkout fix/auth-callback-handling
+
+# Install dependencies
+npm install
 ```
 
-## Testing the Changes
-1. Local Testing:
-   ```bash
-   npm run dev
+#### 2. Environment Variables
+Create or update your `.env.local` file:
+```env
+# Development
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key  # Generate using: openssl rand -base64 32
+
+# Production
+# NEXTAUTH_URL=https://theatom.news
+# Set secure cookie options automatically based on NODE_ENV
+```
+
+#### 3. Database Configuration
+Ensure your MongoDB connection is properly configured:
+```env
+MONGODB_URI=your-mongodb-connection-string
+```
+
+#### 4. Testing the Implementation
+
+a. Local Development Testing:
+```bash
+# Start the development server
+npm run dev
+
+# Test the authentication flow:
+1. Open http://localhost:3000/admin/login
+2. Try invalid credentials - should see specific error messages
+3. Try valid credentials - should redirect to admin dashboard
+4. Check browser dev tools:
+   - Network tab: Look for successful auth requests
+   - Application tab: Verify cookie is set correctly
+   - Console: No authentication-related errors
+```
+
+b. Production Testing Checklist:
+```markdown
+1. Deploy to staging environment
+2. Verify cookie settings:
+   - Name: next-auth.session-token
+   - Secure flag: true in production
+   - SameSite: Lax
+   - HttpOnly: true
+
+3. Test authentication flows:
+   - Fresh login
+   - Session persistence
+   - Logout
+   - Invalid credentials
+   - Session expiry
+
+4. Monitor logs for:
+   - Auth success/failure messages
+   - Redirect handling
+   - Session management
+```
+
+#### 5. Troubleshooting Guide
+
+a. Common Issues and Solutions:
+
+1. "CredentialsSignIn" Error:
+   - Check MongoDB connection
+   - Verify user exists in database
+   - Ensure password hashing is consistent
+
+2. Cookie Issues:
+   ```javascript
+   // Verify cookie configuration in src/auth.js matches:
+   cookies: {
+     sessionToken: {
+       name: `next-auth.session-token`,
+       options: {
+         httpOnly: true,
+         sameSite: 'lax',
+         path: '/',
+         secure: process.env.NODE_ENV === 'production'
+       }
+     }
+   }
    ```
-   Test login at `http://localhost:3000/admin/login`
 
-2. Production Testing:
-   - Deploy to a staging environment first
-   - Test with production domain
-   - Verify cookie behavior
-   - Check session persistence
+3. Redirect Problems:
+   - Check NEXTAUTH_URL is set correctly
+   - Verify middleware redirect logic
+   - Clear browser cookies and try again
 
-## Additional Notes
-- The changes maintain backward compatibility
-- No database schema changes required
-- No new dependencies added
-- Focus on security best practices
+b. Debug Mode:
+Enable detailed logging by adding to `.env.local`:
+```env
+DEBUG=next-auth:*
+```
+
+#### 6. Verification Steps
+
+Before deploying:
+```bash
+# 1. Run tests
+npm test
+
+# 2. Build the application
+npm run build
+
+# 3. Test production build locally
+npm run start
+
+# 4. Verify critical paths:
+- /admin/login
+- /admin
+- /api/auth/session
+- /api/auth/signin
+- /api/auth/signout
+```
+
+#### 7. Deployment Instructions
+
+1. Staging Deployment:
+```bash
+# Update environment variables on staging
+NEXTAUTH_URL=https://staging.theatom.news
+NODE_ENV=production
+
+# Deploy and verify all auth flows
+```
+
+2. Production Deployment:
+```bash
+# Update environment variables
+NEXTAUTH_URL=https://theatom.news
+NODE_ENV=production
+
+# Deploy with zero-downtime strategy
+# Monitor error rates and auth success/failure metrics
+```
+
+### Additional Notes
+- This implementation uses Next.js 13+ App Router
+- Cookie settings auto-adjust based on environment
+- Error handling provides specific user feedback
+- Session persistence is set to 30 days
+- All security best practices are implemented
+- No breaking changes to existing APIs
+
+### Support and Maintenance
+For ongoing issues or questions:
+1. Check server logs for specific error messages
+2. Monitor auth-related metrics in production
+3. Keep dependencies updated, especially next-auth
+4. Regularly review security best practices
+5. Document any environment-specific configurations
