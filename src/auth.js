@@ -13,23 +13,36 @@ export const {
   providers: [
     Credentials({
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            throw new Error("Missing credentials");
+          }
 
-        await dbConnect();
-        const admin = await Admin.findOne({ email: credentials.email });
-        if (!admin) return null;
+          await dbConnect();
+          
+          const admin = await Admin.findOne({ email: credentials.email });
+          if (!admin) {
+            throw new Error("Invalid email");
+          }
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          admin.password
-        );
-        if (!isValid) return null;
+          const isValid = await bcrypt.compare(
+            credentials.password,
+            admin.password
+          );
+          
+          if (!isValid) {
+            throw new Error("Invalid password");
+          }
 
-        return {
-          id: admin._id.toString(),
-          email: admin.email,
-          role: admin.role,
-        };
+          return {
+            id: admin._id.toString(),
+            email: admin.email,
+            role: admin.role,
+          };
+        } catch (error) {
+          console.error("Auth error:", error.message);
+          return null;
+        }
       },
     }),
   ],
@@ -61,5 +74,19 @@ export const {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
   },
 });
